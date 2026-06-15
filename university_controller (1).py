@@ -632,7 +632,7 @@ function renderAclMatrix(){
     const sel=document.getElementById(id);
     if(!sel.options.length) VLANS.forEach(v=>{
       const o=document.createElement('option');
-      o.value=v.id; o.textContent='VLAN '+v.id+' — '+v.name; sel.appendChild(o);
+      o.value=v.id; o.textContent='VLAN '+v.id+' - '+v.name; sel.appendChild(o);
     });
   });
 }
@@ -752,7 +752,7 @@ async function poll(){
 
     const fresh=data.link_alerts||[];
     if(!_firstPoll && fresh.length > state.link_alerts.length){
-      toast('Link Down: '+fresh[0].src+' ↔ '+fresh[0].dst, true);
+      toast('Link Down: '+fresh[0].src+' <-> '+fresh[0].dst, true);
     }
     _firstPoll=false;
     state.link_alerts=fresh;
@@ -797,7 +797,7 @@ class AdminHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         if path in ('/', '/index.html'):
-            self._send(200, 'text/html', ADMIN_HTML.encode())
+            self._send(200, 'text/html; charset=utf-8', ADMIN_HTML.encode())
         elif path == '/api/state':
             self._send(200, 'application/json', json.dumps(self._build_state()).encode())
         else:
@@ -980,7 +980,7 @@ class UniversityController(app_manager.RyuApp):
         }
         with _alerts_lock:
             LINK_ALERTS.appendleft(alert)
-        self.logger.warning("[ALERT] Link down: %s <-> %s — rerouting",
+        self.logger.warning("[ALERT] Link down: %s <-> %s -- rerouting",
                             src_name, dst_name)
 
     # ── Dynamic Routing ───────────────────────────────────────────────────────
