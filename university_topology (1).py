@@ -416,8 +416,14 @@ def start_web_server(port=9000):
 #  MININET TOPOLOGY
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def gateway_for(ip):
+    host_ip = ip.split("/", 1)[0]
+    parts = host_ip.split(".")
+    return ".".join(parts[:3] + ["1"])
+
+
 def add_host(net, name, ip):
-    return net.addHost(name, ip=ip)
+    return net.addHost(name, ip=ip, defaultRoute="via %s" % gateway_for(ip))
 
 
 def build():
