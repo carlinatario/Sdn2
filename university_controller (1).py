@@ -28,7 +28,7 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import (MAIN_DISPATCHER, CONFIG_DISPATCHER,
                                      set_ev_cls)
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import (packet, ethernet, ipv4, tcp, udp, ether_types)
+from ryu.lib.packet import (packet, ethernet, arp, ipv4, tcp, udp, ether_types)
 from ryu.topology import event as topo_event
 
 
@@ -49,6 +49,8 @@ VLAN_PREFIX = {
     10: "10.0.10.", 20: "10.0.20.", 30: "10.0.30.", 40: "10.0.40.",
     50: "10.0.50.", 60: "10.0.60.", 70: "10.0.70.", 80: "10.0.80.",
 }
+
+ROUTER_MAC = "00:00:00:00:fe:01"
 
 TRUNK = 0
 
@@ -71,13 +73,24 @@ PORT_VLAN = {
     16: {1:TRUNK,2:80},
 }
 
+STATIC_LINKS = [
+    (1, 2, 8, 8),
+    (1, 3, 1, 1), (1, 4, 2, 1), (1, 5, 3, 1), (1, 6, 4, 1),
+    (2, 3, 1, 2), (2, 4, 2, 2), (2, 5, 3, 2), (2, 6, 4, 2),
+    (3, 7, 3, 1), (4, 8, 3, 1), (4, 10, 4, 1),
+    (5, 9, 3, 1), (6, 11, 3, 1),
+    (12, 13, 8, 8), (12, 14, 1, 1), (12, 15, 2, 1),
+    (13, 15, 1, 2), (13, 16, 2, 1),
+    (1, 12, 9, 9), (2, 13, 9, 9),
+]
+
 BLOCKED_TCP_PORTS = {23, 135, 139, 445}
 BLOCKED_UDP_PORTS = {161, 162}
 
 INTER_VLAN_POLICY = {
     (10, 20): True, (10, 30): True, (10, 40): True, (10, 50): True,
     (10, 60): True, (10, 70): True, (10, 80): True, (20, 30): True,
-    (20, 50): True, (50, 20): True, (60, 10): True, (60, 70): True,
+    (20, 50): True, (30, 10): True, (50, 20): True, (60, 10): True, (60, 70): True,
     (60, 80): True, (20, 70): True,
 }
 
@@ -107,6 +120,18 @@ def ip_to_vlan(ip_addr):
         return None
     for vlan_id, prefix in VLAN_PREFIX.items():
         if ip_addr.startswith(prefix):
+            return vlan_id
+    return None
+
+
+def vlan_gateway_ip(vlan_id):
+    prefix = VLAN_PREFIX.get(vlan_id)
+    return prefix + "1" if prefix else None
+
+
+def gateway_ip_to_vlan(ip_addr):
+    for vlan_id in VLAN_PREFIX:
+        if ip_addr == vlan_gateway_ip(vlan_id):
             return vlan_id
     return None
 
@@ -913,10 +938,19 @@ class UniversityController(app_manager.RyuApp):
         super().__init__(*args, **kwargs)
         self.topo      = nx.DiGraph()
         self.mac_table = {}
+        self.ip_table  = {}
         self.datapaths = {}
+        self._load_static_topology()
         start_admin_server(self, port=8080)
         self.logger.info("[INIT] University SDN Controller started.")
         self.logger.info("[INIT] Admin UI: http://127.0.0.1:8080")
+
+    def _load_static_topology(self):
+        for dpid in PORT_VLAN:
+            self.topo.add_node(dpid)
+        for left, right, left_port, right_port in STATIC_LINKS:
+            self.topo.add_edge(left, right, port=left_port)
+            self.topo.add_edge(right, left, port=right_port)
 
     # ── OpenFlow ──────────────────────────────────────────────────────────────
 
@@ -1000,6 +1034,136 @@ class UniversityController(app_manager.RyuApp):
             if mac in vlan_map.get(vlan_id, {}):
                 return dpid
         return None
+
+    def _learn_ip_host(self, dpid, port_no, vlan_id, ip_addr, mac_addr):
+        if not ip_addr or ip_addr == "0.0.0.0":
+            return
+        if gateway_ip_to_vlan(ip_addr) is not None:
+            return
+        if ip_to_vlan(ip_addr) != vlan_id:
+            return
+        self.ip_table[ip_addr] = {
+            "mac": mac_addr,
+            "vlan": vlan_id,
+            "dpid": dpid,
+            "port": port_no,
+        }
+
+    def _send_arp_reply(self, dp, in_port, dst_mac, dst_ip, src_ip):
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_ARP,
+            dst=dst_mac,
+            src=ROUTER_MAC))
+        pkt.add_protocol(arp.arp(
+            opcode=arp.ARP_REPLY,
+            src_mac=ROUTER_MAC,
+            src_ip=src_ip,
+            dst_mac=dst_mac,
+            dst_ip=dst_ip))
+        pkt.serialize()
+        actions = [dp.ofproto_parser.OFPActionOutput(in_port)]
+        self._packet_out(dp, None, dp.ofproto.OFPP_CONTROLLER, actions, pkt.data)
+
+    def _send_arp_request(self, dp, out_port, vlan_id, target_ip):
+        gateway_ip = vlan_gateway_ip(vlan_id)
+        if not gateway_ip:
+            return
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_ARP,
+            dst="ff:ff:ff:ff:ff:ff",
+            src=ROUTER_MAC))
+        pkt.add_protocol(arp.arp(
+            opcode=arp.ARP_REQUEST,
+            src_mac=ROUTER_MAC,
+            src_ip=gateway_ip,
+            dst_mac="00:00:00:00:00:00",
+            dst_ip=target_ip))
+        pkt.serialize()
+        actions = [dp.ofproto_parser.OFPActionOutput(out_port)]
+        self._packet_out(dp, None, dp.ofproto.OFPP_CONTROLLER, actions, pkt.data)
+
+    def _resolve_ip_in_vlan(self, dst_ip, dst_vlan):
+        for dpid, vlan_map in PORT_VLAN.items():
+            dp = self.datapaths.get(dpid)
+            if dp is None:
+                continue
+            for port_no, vlan_id in vlan_map.items():
+                if vlan_id == dst_vlan:
+                    self._send_arp_request(dp, port_no, dst_vlan, dst_ip)
+
+    def _install_routed_path_flows(self, path, ip_src, ip_dst, dst_mac,
+                                   dst_vlan, priority=150):
+        for i, dpid in enumerate(path):
+            dp = self.datapaths.get(dpid)
+            if dp is None:
+                continue
+            parser = dp.ofproto_parser
+
+            if i == len(path) - 1:
+                dst_info = self.ip_table.get(ip_dst)
+                if not dst_info:
+                    continue
+                out_port = dst_info["port"]
+            else:
+                out_port = self._out_port_toward(dpid, path[i + 1])
+                if out_port is None:
+                    continue
+
+            actions = [
+                parser.OFPActionSetField(eth_src=ROUTER_MAC),
+                parser.OFPActionSetField(eth_dst=dst_mac),
+                parser.OFPActionOutput(out_port),
+            ]
+            match = parser.OFPMatch(
+                eth_type=ether_types.ETH_TYPE_IP,
+                ipv4_src=ip_src,
+                ipv4_dst=ip_dst)
+            self._add_flow(dp, priority=priority, match=match,
+                           actions=actions, idle_timeout=60)
+
+        with _stats_lock:
+            STATS['flows_installed'] += 1
+
+        self.logger.info("[L3 ROUTE] Path: %s | %s->%s VLAN%d",
+                         "->".join("%x" % d for d in path),
+                         ip_src, ip_dst, dst_vlan)
+
+    def _route_inter_vlan(self, dp, msg, in_port, src_vlan, dst_vlan, ip_pkt):
+        dst_info = self.ip_table.get(ip_pkt.dst)
+        if not dst_info:
+            self._resolve_ip_in_vlan(ip_pkt.dst, dst_vlan)
+            self.logger.info("[L3 ARP] Resolving %s in VLAN%d",
+                             ip_pkt.dst, dst_vlan)
+            return "pending"
+
+        dst_dpid = dst_info["dpid"]
+        path = self._shortest_path(dp.id, dst_dpid)
+        if not path:
+            _log('DROP', ip_pkt.src, ip_pkt.dst,
+                 'No routed path VLAN %d->%d' % (src_vlan, dst_vlan),
+                 vlan=src_vlan)
+            return "dropped"
+
+        self._install_routed_path_flows(
+            path, ip_pkt.src, ip_pkt.dst, dst_info["mac"], dst_vlan)
+
+        parser = dp.ofproto_parser
+        if len(path) == 1:
+            out_port = dst_info["port"]
+        else:
+            out_port = self._out_port_toward(dp.id, path[1])
+        if out_port is None:
+            return "dropped"
+
+        actions = [
+            parser.OFPActionSetField(eth_src=ROUTER_MAC),
+            parser.OFPActionSetField(eth_dst=dst_info["mac"]),
+            parser.OFPActionOutput(out_port),
+        ]
+        self._packet_out(dp, msg, in_port, actions)
+        return "forwarded"
 
     def _install_path_flows(self, path, src_mac, dst_mac, vlan_id,
                              ip_src=None, ip_dst=None, priority=100):
@@ -1116,13 +1280,27 @@ class UniversityController(app_manager.RyuApp):
              .setdefault(vlan_id, {})
              [src_mac]) = in_port
 
+        arp_pkt = pkt.get_protocol(arp.arp)
         ip_pkt  = pkt.get_protocol(ipv4.ipv4)
         tcp_pkt = pkt.get_protocol(tcp.tcp)
         udp_pkt = pkt.get_protocol(udp.udp)
 
+        if arp_pkt:
+            self._learn_ip_host(dpid, in_port, vlan_id,
+                                arp_pkt.src_ip, arp_pkt.src_mac)
+            if (arp_pkt.opcode == arp.ARP_REQUEST and
+                    arp_pkt.dst_ip == vlan_gateway_ip(vlan_id)):
+                self._send_arp_reply(dp, in_port, arp_pkt.src_mac,
+                                     arp_pkt.src_ip, arp_pkt.dst_ip)
+                return
+            if (arp_pkt.opcode == arp.ARP_REPLY and
+                    gateway_ip_to_vlan(arp_pkt.dst_ip) == vlan_id):
+                return
+
         if ip_pkt:
             src_vlan = ip_to_vlan(ip_pkt.src)
             dst_vlan = ip_to_vlan(ip_pkt.dst)
+            self._learn_ip_host(dpid, in_port, vlan_id, ip_pkt.src, src_mac)
 
             if src_vlan is not None and src_vlan != vlan_id:
                 _log('DROP', ip_pkt.src, ip_pkt.dst,
@@ -1140,6 +1318,26 @@ class UniversityController(app_manager.RyuApp):
                 self.logger.warning("[FW DROP] %s->%s %s dpid=%016x",
                                     ip_pkt.src, ip_pkt.dst, reason, dpid)
                 return
+
+            if (src_vlan is not None and dst_vlan is not None and
+                    src_vlan != dst_vlan):
+                route_result = self._route_inter_vlan(
+                    dp, msg, in_port, src_vlan, dst_vlan, ip_pkt)
+                if route_result:
+                    if route_result == "forwarded":
+                        with _stats_lock:
+                            STATS['packets_fwd'] += 1
+                        _log('FWD', ip_pkt.src, ip_pkt.dst,
+                             'Inter-VLAN routed', vlan=vlan_id)
+                    elif route_result == "pending":
+                        _log('DROP', ip_pkt.src, ip_pkt.dst,
+                             'Resolving destination ARP', vlan=vlan_id)
+                    elif route_result == "dropped":
+                        with _stats_lock:
+                            STATS['packets_drop'] += 1
+                        _log('DROP', ip_pkt.src, ip_pkt.dst,
+                             'Inter-VLAN route failed', vlan=vlan_id)
+                    return
 
         with _stats_lock:
             STATS['packets_fwd'] += 1
@@ -1195,10 +1393,12 @@ class UniversityController(app_manager.RyuApp):
             hard_timeout=hard_timeout)
         dp.send_msg(mod)
 
-    def _packet_out(self, dp, msg, in_port, actions):
+    def _packet_out(self, dp, msg, in_port, actions, data=None):
         parser  = dp.ofproto_parser
         ofproto = dp.ofproto
+        if data is None and msg is not None:
+            data = msg.data
         out = parser.OFPPacketOut(
             datapath=dp, buffer_id=ofproto.OFP_NO_BUFFER,
-            in_port=in_port, actions=actions, data=msg.data)
+            in_port=in_port, actions=actions, data=data)
         dp.send_msg(out)
