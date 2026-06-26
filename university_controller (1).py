@@ -28,7 +28,7 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import (MAIN_DISPATCHER, CONFIG_DISPATCHER,
                                      set_ev_cls)
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import (packet, ethernet, arp, ipv4, tcp, udp, ether_types)
+from ryu.lib.packet import (packet, ethernet, arp, ipv4, icmp, tcp, udp, ether_types)
 from ryu.topology import event as topo_event
 
 
@@ -1049,6 +1049,25 @@ class UniversityController(app_manager.RyuApp):
             "port": port_no,
         }
 
+    def _send_icmp_echo_reply(self, dp, in_port, dst_mac, ip_pkt, icmp_pkt):
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(
+            ethertype=ether_types.ETH_TYPE_IP,
+            dst=dst_mac,
+            src=ROUTER_MAC))
+        pkt.add_protocol(ipv4.ipv4(
+            dst=ip_pkt.src,
+            src=ip_pkt.dst,
+            proto=ip_pkt.proto))
+        pkt.add_protocol(icmp.icmp(
+            type_=icmp.ICMP_ECHO_REPLY,
+            code=0,
+            csum=0,
+            data=icmp_pkt.data))
+        pkt.serialize()
+        actions = [dp.ofproto_parser.OFPActionOutput(in_port)]
+        self._packet_out(dp, None, dp.ofproto.OFPP_CONTROLLER, actions, pkt.data)
+
     def _send_arp_reply(self, dp, in_port, dst_mac, dst_ip, src_ip):
         pkt = packet.Packet()
         pkt.add_protocol(ethernet.ethernet(
@@ -1292,6 +1311,8 @@ class UniversityController(app_manager.RyuApp):
                     arp_pkt.dst_ip == vlan_gateway_ip(vlan_id)):
                 self._send_arp_reply(dp, in_port, arp_pkt.src_mac,
                                      arp_pkt.src_ip, arp_pkt.dst_ip)
+                self.logger.info("[L3 GW] ARP reply %s is at %s on VLAN%d",
+                                 arp_pkt.dst_ip, ROUTER_MAC, vlan_id)
                 return
             if (arp_pkt.opcode == arp.ARP_REPLY and
                     gateway_ip_to_vlan(arp_pkt.dst_ip) == vlan_id):
@@ -1301,6 +1322,14 @@ class UniversityController(app_manager.RyuApp):
             src_vlan = ip_to_vlan(ip_pkt.src)
             dst_vlan = ip_to_vlan(ip_pkt.dst)
             self._learn_ip_host(dpid, in_port, vlan_id, ip_pkt.src, src_mac)
+            icmp_pkt = pkt.get_protocol(icmp.icmp)
+
+            if gateway_ip_to_vlan(ip_pkt.dst) == vlan_id:
+                if icmp_pkt and icmp_pkt.type == icmp.ICMP_ECHO_REQUEST:
+                    self._send_icmp_echo_reply(dp, in_port, src_mac, ip_pkt, icmp_pkt)
+                    self.logger.info("[L3 GW] ICMP echo reply %s -> %s on VLAN%d",
+                                     ip_pkt.dst, ip_pkt.src, vlan_id)
+                return
 
             if src_vlan is not None and src_vlan != vlan_id:
                 _log('DROP', ip_pkt.src, ip_pkt.dst,
