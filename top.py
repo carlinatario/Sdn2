@@ -49,25 +49,26 @@ TOPOLOGY_DATA = {
         {"id": "s7", "label": "City Admin + Lab", "type": "access", "campus": "City", "x": 35, "y": 90},
         {"id": "s8", "label": "City Student WiFi", "type": "access", "campus": "City", "x": 65, "y": 90},
 
-        {"id": "adminSvr", "label": "Admin Server", "type": "server", "vlan": 10, "ip": "10.0.10.10", "x": 8, "y": 58},
-        {"id": "adminPc", "label": "Admin PC", "type": "host", "vlan": 10, "ip": "10.0.10.11", "x": 16, "y": 62},
-        {"id": "registra", "label": "Registrar", "type": "host", "vlan": 20, "ip": "10.0.20.10", "x": 25, "y": 58},
+        {"id": "adminPc", "label": "Admin PC", "type": "host", "vlan": 10, "ip": "10.0.10.11", "x": 12, "y": 58},
+        {"id": "registrar", "label": "Registrar", "type": "host", "vlan": 20, "ip": "10.0.20.10", "x": 22, "y": 62},
         {"id": "hod1", "label": "HOD", "type": "host", "vlan": 20, "ip": "10.0.20.11", "x": 32, "y": 62},
         {"id": "staff1", "label": "Staff", "type": "host", "vlan": 20, "ip": "10.0.20.12", "x": 39, "y": 66},
         {"id": "student1", "label": "Student 1", "type": "host", "vlan": 40, "ip": "10.0.40.11", "x": 45, "y": 62},
-        {"id": "student2", "label": "Student 2", "type": "host", "vlan": 40, "ip": "10.0.40.12", "x": 50, "y": 66},
-        {"id": "lab1", "label": "Lab 1", "type": "host", "vlan": 30, "ip": "10.0.30.11", "x": 55, "y": 62},
-        {"id": "lab2", "label": "Lab 2", "type": "host", "vlan": 30, "ip": "10.0.30.12", "x": 61, "y": 66},
-        {"id": "lab3", "label": "Lab 3", "type": "host", "vlan": 30, "ip": "10.0.30.13", "x": 66, "y": 62},
-        {"id": "lab4", "label": "Lab 4", "type": "host", "vlan": 30, "ip": "10.0.30.14", "x": 70, "y": 66},
+        {"id": "lab3", "label": "Lab 3", "type": "host", "vlan": 30, "ip": "10.0.30.13", "x": 50, "y": 66},
+        {"id": "lab1", "label": "Lab 1", "type": "host", "vlan": 30, "ip": "10.0.30.11", "x": 56, "y": 62},
+        {"id": "lab2", "label": "Lab 2", "type": "host", "vlan": 30, "ip": "10.0.30.12", "x": 62, "y": 66},
+        {"id": "lab4", "label": "Lab 4", "type": "host", "vlan": 30, "ip": "10.0.30.14", "x": 68, "y": 62},
+        {"id": "adminSvr", "label": "Admin Server", "type": "server", "vlan": 10, "ip": "10.0.10.10", "x": 74, "y": 56},
         {"id": "lib1", "label": "Library PC", "type": "host", "vlan": 50, "ip": "10.0.50.11", "x": 78, "y": 58},
-        {"id": "lib2", "label": "Catalog PC", "type": "host", "vlan": 50, "ip": "10.0.50.12", "x": 84, "y": 62},
-        {"id": "librarySvr", "label": "Library Server", "type": "server", "vlan": 50, "ip": "10.0.50.20", "x": 91, "y": 58},
+        {"id": "lib2", "label": "Catalog PC", "type": "host", "vlan": 50, "ip": "10.0.50.12", "x": 43, "y": 70},
+        {"id": "student2", "label": "Student 2", "type": "host", "vlan": 40, "ip": "10.0.40.12", "x": 88, "y": 66},
+        {"id": "librarySvr", "label": "Library Server", "type": "server", "vlan": 50, "ip": "10.0.50.20", "x": 92, "y": 58},
         {"id": "b_admin", "label": "City Admin", "type": "host", "vlan": 60, "ip": "10.0.60.11", "x": 24, "y": 96},
         {"id": "b_lab1", "label": "City Lab 1", "type": "host", "vlan": 70, "ip": "10.0.70.11", "x": 34, "y": 98},
-        {"id": "b_lab2", "label": "City Lab 2", "type": "host", "vlan": 70, "ip": "10.0.70.12", "x": 43, "y": 96},
-        {"id": "b_stu1", "label": "City Student 1", "type": "host", "vlan": 80, "ip": "10.0.80.11", "x": 58, "y": 96},
-        {"id": "b_stu2", "label": "City Student 2", "type": "host", "vlan": 80, "ip": "10.0.80.12", "x": 70, "y": 96},
+        {"id": "b_stu2", "label": "City Student 2", "type": "host", "vlan": 80, "ip": "10.0.80.12", "x": 43, "y": 96},
+        {"id": "b_staff", "label": "City Staff", "type": "host", "vlan": 60, "ip": "10.0.60.12", "x": 56, "y": 96},
+        {"id": "b_lab2", "label": "City Lab 2", "type": "host", "vlan": 70, "ip": "10.0.70.12", "x": 64, "y": 98},
+        {"id": "b_stu1", "label": "City Student 1", "type": "host", "vlan": 80, "ip": "10.0.80.11", "x": 72, "y": 96},
     ],
     "links": [
         {"src": "s1", "dst": "s2", "type": "campus", "label": "Admin"},
@@ -77,35 +78,36 @@ TOPOLOGY_DATA = {
         {"src": "s1", "dst": "s6", "type": "wan", "label": "Inter-campus WAN"},
         {"src": "s6", "dst": "s7", "type": "campus", "label": "City admin/lab"},
         {"src": "s6", "dst": "s8", "type": "campus", "label": "City WiFi"},
-        {"src": "s2", "dst": "adminSvr", "type": "host"},
         {"src": "s2", "dst": "adminPc", "type": "host"},
-        {"src": "s2", "dst": "registra", "type": "host"},
+        {"src": "s2", "dst": "registrar", "type": "host"},
         {"src": "s3", "dst": "hod1", "type": "host"},
         {"src": "s3", "dst": "staff1", "type": "host"},
         {"src": "s3", "dst": "student1", "type": "host"},
-        {"src": "s3", "dst": "student2", "type": "host"},
+        {"src": "s3", "dst": "lab3", "type": "host"},
+        {"src": "s3", "dst": "lib2", "type": "host"},
         {"src": "s4", "dst": "lab1", "type": "host"},
         {"src": "s4", "dst": "lab2", "type": "host"},
-        {"src": "s4", "dst": "lab3", "type": "host"},
         {"src": "s4", "dst": "lab4", "type": "host"},
+        {"src": "s5", "dst": "adminSvr", "type": "host"},
         {"src": "s5", "dst": "lib1", "type": "host"},
-        {"src": "s5", "dst": "lib2", "type": "host"},
+        {"src": "s5", "dst": "student2", "type": "host"},
         {"src": "s5", "dst": "librarySvr", "type": "host"},
         {"src": "s7", "dst": "b_admin", "type": "host"},
         {"src": "s7", "dst": "b_lab1", "type": "host"},
-        {"src": "s7", "dst": "b_lab2", "type": "host"},
+        {"src": "s7", "dst": "b_stu2", "type": "host"},
+        {"src": "s8", "dst": "b_staff", "type": "host"},
+        {"src": "s8", "dst": "b_lab2", "type": "host"},
         {"src": "s8", "dst": "b_stu1", "type": "host"},
-        {"src": "s8", "dst": "b_stu2", "type": "host"},
     ],
     "vlans": [
-        {"id": 10, "name": "Main Admin", "subnet": "10.0.10.0/24", "color": "#c0392b"},
-        {"id": 20, "name": "Faculty & Staff", "subnet": "10.0.20.0/24", "color": "#d68910"},
-        {"id": 30, "name": "Teaching Labs", "subnet": "10.0.30.0/24", "color": "#239b56"},
-        {"id": 40, "name": "Student WiFi", "subnet": "10.0.40.0/24", "color": "#2874a6"},
-        {"id": 50, "name": "Library & Servers", "subnet": "10.0.50.0/24", "color": "#7d3c98"},
-        {"id": 60, "name": "City Admin", "subnet": "10.0.60.0/24", "color": "#922b21"},
-        {"id": 70, "name": "City Labs", "subnet": "10.0.70.0/24", "color": "#1e8449"},
-        {"id": 80, "name": "City Student WiFi", "subnet": "10.0.80.0/24", "color": "#21618c"},
+        {"id": 10, "name": "Main Admin", "subnet": "10.0.10.0/24", "gateway": "10.0.10.1", "color": "#c0392b"},
+        {"id": 20, "name": "Faculty & Staff", "subnet": "10.0.20.0/24", "gateway": "10.0.20.1", "color": "#d68910"},
+        {"id": 30, "name": "Teaching Labs", "subnet": "10.0.30.0/24", "gateway": "10.0.30.1", "color": "#239b56"},
+        {"id": 40, "name": "Student WiFi", "subnet": "10.0.40.0/24", "gateway": "10.0.40.1", "color": "#2874a6"},
+        {"id": 50, "name": "Library & Servers", "subnet": "10.0.50.0/24", "gateway": "10.0.50.1", "color": "#7d3c98"},
+        {"id": 60, "name": "City Admin", "subnet": "10.0.60.0/24", "gateway": "10.0.60.254", "color": "#922b21"},
+        {"id": 70, "name": "City Labs", "subnet": "10.0.70.0/24", "gateway": "10.0.70.254", "color": "#1e8449"},
+        {"id": 80, "name": "City Student WiFi", "subnet": "10.0.80.0/24", "gateway": "10.0.80.254", "color": "#21618c"},
     ],
 }
 
@@ -563,7 +565,7 @@ University SDN
 
 <div class="badge">8 Switches</div>
 
-<div class="badge">19 Hosts</div>
+<div class="badge">20 Hosts</div>
 
 <div class="badge">8 VLANs</div>
 
@@ -612,7 +614,7 @@ height="900">
 
 <div class="stat">
 
-<div class="num">19</div>
+<div class="num">20</div>
 
 <div class="txt">Hosts</div>
 
@@ -851,7 +853,7 @@ text(250,515,"CITY CAMPUS","zone-title"); // was 455
 
         <div class="small">
 
-        ${v.subnet}
+        ${v.subnet} | GW ${v.gateway}
 
         </div>
 
@@ -1048,7 +1050,9 @@ def start_web_server(port=9000):
 def gateway_for(ip):
     host_ip = ip.split("/", 1)[0]
     parts = host_ip.split(".")
-    return ".".join(parts[:3] + ["1"])
+    vlan_id = int(parts[2])
+    gateway_host = "254" if vlan_id in {60, 70, 80} else "1"
+    return ".".join(parts[:3] + [gateway_host])
 
 
 def add_host(net, name, ip):
@@ -1094,6 +1098,7 @@ def build():
         "lib2": add_host(net, "lib2", "10.0.50.12/24"),
         "librarySvr": add_host(net, "librarySvr", "10.0.50.20/24"),
         "b_admin": add_host(net, "b_admin", "10.0.60.11/24"),
+        "b_staff": add_host(net, "b_staff", "10.0.60.12/24"),
         "b_lab1": add_host(net, "b_lab1", "10.0.70.11/24"),
         "b_lab2": add_host(net, "b_lab2", "10.0.70.12/24"),
         "b_stu1": add_host(net, "b_stu1", "10.0.80.11/24"),
@@ -1111,25 +1116,26 @@ def build():
     net.addLink(s6, s7, port1=2, port2=1, bw=LAN_BW)
     net.addLink(s6, s8, port1=3, port2=1, bw=LAN_BW)
 
-    net.addLink(s2, hosts["adminSvr"], port1=2, port2=1, bw=LAN_BW)
-    net.addLink(s2, hosts["adminPc"], port1=3, port2=1, bw=LAN_BW)
-    net.addLink(s2, hosts["registrar"], port1=4, port2=1, bw=LAN_BW)
+    net.addLink(s2, hosts["adminPc"], port1=2, port2=1, bw=LAN_BW)
+    net.addLink(s2, hosts["registrar"], port1=3, port2=1, bw=LAN_BW)
     net.addLink(s3, hosts["hod1"], port1=2, port2=1, bw=LAN_BW)
     net.addLink(s3, hosts["staff1"], port1=3, port2=1, bw=LAN_BW)
     net.addLink(s3, hosts["student1"], port1=4, port2=1, bw=LAN_BW)
-    net.addLink(s3, hosts["student2"], port1=5, port2=1, bw=LAN_BW)
+    net.addLink(s3, hosts["lab3"], port1=5, port2=1, bw=LAN_BW)
+    net.addLink(s3, hosts["lib2"], port1=6, port2=1, bw=LAN_BW)
     net.addLink(s4, hosts["lab1"], port1=2, port2=1, bw=LAN_BW)
     net.addLink(s4, hosts["lab2"], port1=3, port2=1, bw=LAN_BW)
-    net.addLink(s4, hosts["lab3"], port1=4, port2=1, bw=LAN_BW)
-    net.addLink(s4, hosts["lab4"], port1=5, port2=1, bw=LAN_BW)
-    net.addLink(s5, hosts["lib1"], port1=2, port2=1, bw=LAN_BW)
-    net.addLink(s5, hosts["lib2"], port1=3, port2=1, bw=LAN_BW)
-    net.addLink(s5, hosts["librarySvr"], port1=4, port2=1, bw=LAN_BW)
+    net.addLink(s4, hosts["lab4"], port1=4, port2=1, bw=LAN_BW)
+    net.addLink(s5, hosts["adminSvr"], port1=2, port2=1, bw=LAN_BW)
+    net.addLink(s5, hosts["lib1"], port1=3, port2=1, bw=LAN_BW)
+    net.addLink(s5, hosts["student2"], port1=4, port2=1, bw=LAN_BW)
+    net.addLink(s5, hosts["librarySvr"], port1=5, port2=1, bw=LAN_BW)
     net.addLink(s7, hosts["b_admin"], port1=2, port2=1, bw=LAN_BW)
     net.addLink(s7, hosts["b_lab1"], port1=3, port2=1, bw=LAN_BW)
-    net.addLink(s7, hosts["b_lab2"], port1=4, port2=1, bw=LAN_BW)
-    net.addLink(s8, hosts["b_stu1"], port1=2, port2=1, bw=LAN_BW)
-    net.addLink(s8, hosts["b_stu2"], port1=3, port2=1, bw=LAN_BW)
+    net.addLink(s7, hosts["b_stu2"], port1=4, port2=1, bw=LAN_BW)
+    net.addLink(s8, hosts["b_staff"], port1=2, port2=1, bw=LAN_BW)
+    net.addLink(s8, hosts["b_lab2"], port1=3, port2=1, bw=LAN_BW)
+    net.addLink(s8, hosts["b_stu1"], port1=4, port2=1, bw=LAN_BW)
 
     net.start()
 
@@ -1144,9 +1150,9 @@ def build():
     info("  Browser topology: http://127.0.0.1:9000\n\n")
     info("  Useful tests:\n")
     info("    lab1 ping -c3 lab2\n")
-    info("    admin_pc ping -c3 library_svr\n")
-    info("    admin_pc ping -c3 b_admin\n")
-    info("    student1 ping -c3 admin_svr    (expected blocked by ACL)\n")
+    info("    adminPc ping -c3 librarySvr\n")
+    info("    adminPc ping -c3 b_admin\n")
+    info("    student1 ping -c3 adminSvr    (expected blocked by ACL)\n")
     info("    link s1 s6 down                (tests city campus isolation)\n")
     info("=" * 66 + "\n\n")
 
